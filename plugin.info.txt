@@ -1,0 +1,7 @@
+base    jiradata
+author  Stephan Dekker
+email   Stephan@SparklingSoftware.com.au
+date    2012-11-14
+name    JIRA Rest API Plugin
+desc    Retrieved information from JIRA
+url     http://www.dokuwiki.org/plugin:jiradata
