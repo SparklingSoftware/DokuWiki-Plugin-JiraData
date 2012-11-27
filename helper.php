@@ -10,12 +10,12 @@ if(!defined('DOKU_PLUGIN')) define('DOKU_PLUGIN',DOKU_INC.'lib/plugins/');
 require_once(DOKU_PLUGIN.'syntax.php');
 require_once(DOKU_INC.'inc/infoutils.php');
 
-require_once(DOKU_PLUGIN.'jira/lib/Autoloader.php');
+require_once(DOKU_PLUGIN.'jiradata/lib/Autoloader.php');
 
 /**
  * This is the base class for all syntax classes, providing some general stuff
  */
-class helper_plugin_jira extends DokuWiki_Plugin {
+class helper_plugin_jiradata extends DokuWiki_Plugin {
 
     function getMethods(){
         $result = array();
@@ -70,7 +70,7 @@ class helper_plugin_jira extends DokuWiki_Plugin {
 
         $api = new Jira_Api(
             "http://jira:8080",
-            new Jira_Api_Authentication_Basic("sdekker", "SparklingSoftware123")
+            new Jira_Api_Authentication_Basic("sdekker", "secret123")
         );
 
         $jql = 'project = SEPG AND (status = "In Progress" or status = "Awaiting Signoff") ORDER BY key';
