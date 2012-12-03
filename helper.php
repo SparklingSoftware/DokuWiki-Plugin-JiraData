@@ -65,18 +65,46 @@ class helper_plugin_jiradata extends DokuWiki_Plugin {
         return $table;
     }
     
-    function doWork() {
+    function getData($jql) {
+        global $conf;
+        
         Jira_Autoloader::register();
 
+        //$jiraURL = $conf['plugin']['jiradata']['jira_url'];
+        $jiraURL = 'http://jira.global.thenational.com';        
+        
         $api = new Jira_Api(
-            "http://jira:8080",
+            $jiraURL,
             new Jira_Api_Authentication_Basic("sdekker", "secret123")
         );
 
-        $jql = 'project = SEPG AND (status = "In Progress" or status = "Awaiting Signoff") ORDER BY key';
         $walker = new Jira_Issues_Walker($api);
         $walker->push($jql, "key,summary");
         $walker->valid();
+        
+        $table = array();
+        $total = $walker->getTotal();
+        for ($index = 1; $index <= $total; $index++) {
+
+            // Get the values from the JIRA issue
+            $key = $walker->current()->getKey(); 
+            $summary = $walker->current()->getSummary(); 
+//            $description = $walker->current()->getDescription(); 
+            $description = 'todo';
+
+            // Copy the values into a result row
+            $row = array(
+                "key" => $key, 
+                "title" => $summary, 
+                "description" => $description
+            );
+            array_push(&$table, $row);                    
+
+            // Move to the next issue
+            $walker->next();  
+        }
+
+        return $table;
     }
         
     /**
