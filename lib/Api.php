@@ -131,6 +131,11 @@ class Jira_Api
         return $this->api(self::REQUEST_GET, sprintf("/rest/api/2/issue/%s", $issueKey));
     }
 
+    public function editIssue($issueKey, $params)
+    {
+        return $this->api(self::REQUEST_PUT, sprintf("/rest/api/2/issue/%s", $issueKey), $params);
+    }
+
     /**
      * get available issue types
      *
@@ -149,23 +154,33 @@ class Jira_Api
     }
 
     /**
+     * get available versions
+     *
+     * @return mixed
+     */
+    public function getVersions($projectKey)
+    {
+        $result = $this->api(self::REQUEST_GET, "/rest/api/2/project/{$projectKey}/versions", array(), true);
+        return $result;
+    }
+
+
+    /**
      * create an issue.
      *
-     * @param $projectId
+     * @param $projectKey
      * @param $summary
-     * @param $description
      * @param $issueType
      * @param array $options
      * @return mixed
      */
-    public function createIssue($projectId, $summary, $description, $issueType, $options = array())
+    public function createIssue($projectKey, $summary, $issueType, $options = array())
     {
         $default = array(
             "project" => array(
-                "id"  => $projectId,
+                "key"  => $projectKey,
             ),
             "summary"     => $summary,
-            "description" => $description,
             "issuetype"   => array(
                 "id" => $issueType,
         ));
