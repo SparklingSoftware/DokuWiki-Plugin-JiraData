@@ -38,13 +38,13 @@ class helper_plugin_jiradata extends DokuWiki_Plugin {
             "title" => "Improve the IT Industry", 
             "description" => "As an IT industry we owe it to ourselfs to deliver more value to our customers"
             );
-        array_push(&$table, $row);        
+        array_push($table, $row);        
         $row = array(
             "key" => "IP-165", 
             "title" => "Improvement 165", 
             "description" => "Improvement 165 description"
             );
-        array_push(&$table, $row);        
+        array_push($table, $row);        
         
         for ($i=501; $i<=550; $i++)
         {
@@ -54,7 +54,7 @@ class helper_plugin_jiradata extends DokuWiki_Plugin {
                 "description" => "Improvement ".$i." description"
                 );
 
-            array_push(&$table, $row);
+            array_push($table, $row);
         }
         
         return $table;
@@ -67,13 +67,34 @@ class helper_plugin_jiradata extends DokuWiki_Plugin {
     
     function getData($jql) {
         global $conf;
+        $this->getConf('');
         
+        $integrationEnabled = $conf['plugin']['jiradata']['jira_integration_enabled'];
+        if ($integrationEnabled === 0) {
+            $table = array();
+            $row = array( "key" => 'ALM-9999',  "title" => 'JIRA Integration disabled', "description" => 'JIRA Integration disabled');
+            array_push($table, $row);                                
+            $row = array( "key" => 'ALM-9998',  "title" => 'JIRA Integration disabled', "description" => 'JIRA Integration disabled');
+            array_push($table, $row);                                
+            $row = array( "key" => 'ALM-9997',  "title" => 'JIRA Integration disabled', "description" => 'JIRA Integration disabled');
+            array_push($table, $row);                                
+            return $table;
+        }
+        
+        $jiraURL = $conf['plugin']['jiradata']['jira_url'];    
+        $username = $conf['plugin']['jiradata']['jira_username'];    
+        $password = $conf['plugin']['jiradata']['jira_password'];    
+
+        $headers = @get_headers($jiraURL."/rest/api/latest/serverInfo");
+        if(strpos($headers[0],'200')===false) {        
+            throw new Exception("Error connecting to JIRA: ".$jiraURL);
+        }
+        
+        // Debug info only:
+        // $msg = 'Username: '.$username.' Password: '.$password;
+        // msg($msg);
+
         Jira_Autoloader::register();
-
-        $jiraURL = $this->getConf('jira_url');    
-        $username = $this->getConf('jira_username');    
-        $password = $this->getConf('jira_password');    
-
         $api = new Jira_Api(
             $jiraURL,
             new Jira_Api_Authentication_Basic($username, $password)
@@ -95,7 +116,7 @@ class helper_plugin_jiradata extends DokuWiki_Plugin {
                 "description" => $description
             );
 
-            array_push(&$table, $row);                    
+            array_push($table, $row);                    
         }        
 
         return $table;
