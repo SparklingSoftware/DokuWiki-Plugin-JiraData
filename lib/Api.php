@@ -48,6 +48,12 @@ class Jira_Api
 
     /** @var array $fields */
     protected $fields;
+    
+    /** @var array $priority */
+    protected $priorities;
+    
+    /** @var array $status */
+    protected $statuses;
 
     /**
      * create a jira api client.
@@ -64,7 +70,7 @@ class Jira_Api
         $this->authentication = $authentication;
 
         if (is_null($client)) {
-            $client = new Jira_Api_Client_PHPClient();
+            $client = new Jira_Api_Client_CurlClient();
         }
 
         $this->client = $client;
@@ -124,16 +130,133 @@ class Jira_Api
      * issue key should be YOURPROJ-221
      *
      * @param $issueKey
+     * @param $expand
      * @return mixed
      */
-    public function getIssue($issueKey)
+    public function getIssue($issueKey, $expand = '')
     {
-        return $this->api(self::REQUEST_GET, sprintf("/rest/api/2/issue/%s", $issueKey));
+        return $this->api(self::REQUEST_GET, sprintf("/rest/api/2/issue/%s", $issueKey), array('expand' => $expand));
     }
 
     public function editIssue($issueKey, $params)
     {
         return $this->api(self::REQUEST_PUT, sprintf("/rest/api/2/issue/%s", $issueKey), $params);
+    }
+
+	
+	
+
+    public function getAttachment($attachmentId)
+    {
+        $result = $this->api(self::REQUEST_GET, "/rest/api/2/attachment/$attachmentId", array(), true);
+
+        return $result;
+    }
+	
+    public function getProjects()
+    {
+        return $this->api(self::REQUEST_GET, "/rest/api/2/project");
+    }
+	
+    public function getProject($projectKey)
+    {
+        $result = $this->api(self::REQUEST_GET, "/rest/api/2/project/{$projectKey}", array(), true);
+
+        return $result;
+    }
+
+    public function getRoles($projectKey)
+    {
+        $result = $this->api(self::REQUEST_GET, "/rest/api/2/project/{$projectKey}/roles", array(), true);
+        return $result;
+    }
+
+    public function getRoleDetails($projectKey, $roleId)
+    {
+        $result = $this->api(self::REQUEST_GET, "/rest/api/2/project/{$projectKey}/role/{$roleId}", array(), true);
+        return $result;
+    }
+
+   /**
+    * Returns the meta data for creating issues. This includes the available projects, issue types
+    * and fields, including field types and whether or not those fields are required.
+    * Projects will not be returned if the user does not have permission to create issues in that project.
+    *
+    * @param $projectIds array      Combined with the projectKeys param, lists the projects with which to filter the results.
+    *                               If absent, all projects are returned. Specifiying a project that does not exist (or that
+    *                               you cannot create issues in) is not an error, but it will not be in the results.
+    * @param $projectKeys array     Combined with the projectIds param, lists the projects with which to filter the
+    *                               results. If null, all projects are returned. Specifiying a project that does not exist (or
+    *                               that you cannot create issues in) is not an error, but it will not be in the results.
+    * @param $issuetypeIds array    Combined with issuetypeNames, lists the issue types with which to filter the results.
+    *                               If null, all issue types are returned. Specifiying an issue type that does not exist is
+    *                               not an error.
+    * @param $issuetypeNames array  Combined with issuetypeIds, lists the issue types with which to filter the results.
+    *                               If null, all issue types are returned. This parameter can be specified multiple times,
+    *                               but is NOT interpreted as a comma-separated list. Specifiying an issue type that does
+    *                               not exist is not an error.
+    * @return string
+    */
+    public function getCreateMeta(array $projectIds = null, array $projectKeys = null,
+                                  array $issuetypeIds = null, array $issuetypeNames = null)
+    {
+        // Create comma seperated query parameters for the supplied filters
+        $data = array();
+        foreach(array("projectIds", "projectKeys", "issuetypeIds", "issuetypeNames") as $parameterName)
+            if(${$parameterName} !== null)
+                $data[$parameterName] = implode(",", ${$parameterName});
+
+        $result = $this->api(self::REQUEST_GET, "/rest/api/2/issue/createmeta", $data, true);
+        return $result;
+    }
+	
+	
+    /**
+     * add a comment to a ticket
+     *
+     * issue key should be YOURPROJ-221
+     *
+     * @param $issueKey
+     * @param $params
+     * @return mixed
+     */
+    public function addComment($issueKey, $params)
+    {
+        if (is_string($params)) {
+            // if $params is scalar string value -> wrapping it properly
+            $params = array(
+                'body' => $params
+            );
+        }
+        return $this->api(self::REQUEST_POST, sprintf("/rest/api/2/issue/%s/comment", $issueKey), $params);
+    }
+
+    /**
+     * get available transitions for a ticket
+     *
+     * issue key should be YOURPROJ-22
+     *
+     * @param $issueKey
+     * @param $params
+     * @return mixed
+     */
+    public function getTransitions($issueKey, $params)
+    {
+        return $this->api(self::REQUEST_GET, sprintf("/rest/api/2/issue/%s/transitions", $issueKey), $params);
+    }
+
+    /**
+     * transation a ticket
+     *
+     * issue key should be YOURPROJ-22
+     *
+     * @param $issueKey
+     * @param $params
+     * @return mixed
+     */
+    public function transition($issueKey, $params)
+    {
+        return $this->api(self::REQUEST_POST, sprintf("/rest/api/2/issue/%s/transitions", $issueKey), $params);
     }
 
     /**
@@ -164,6 +287,44 @@ class Jira_Api
         return $result;
     }
 
+    /**
+     * get available priorities
+     *
+     * @return mixed
+     */
+    public function getPriorties()
+    {
+    	if (!count($this->priorities)) {
+    		$priorities  = array();
+    		$result = $this->api(self::REQUEST_GET, "/rest/api/2/priority", array());
+    	    /* set hash key as custom field id */
+    		foreach($result->getResult() as $k => $v) {
+    			$priorities[$v['id']] = $v;
+    		}
+    		$this->priorities = $priorities;
+    	}
+    	return $this->priorities;
+    }
+
+    /**
+     * get available statuses
+     *
+     * @return mixed
+     */
+    public function getStatuses()
+    {
+    	if (!count($this->statuses)) {
+    		$statuses  = array();
+    		$result = $this->api(self::REQUEST_GET, "/rest/api/2/status", array());
+    		/* set hash key as custom field id */
+    		foreach($result->getResult() as $k => $v) {
+    			$statuses[$v['id']] = $v;
+    		}
+    		$this->statuses= $statuses;
+    	}
+    	return $this->statuses;
+    }
+    
 
     /**
      * create an issue.
@@ -240,6 +401,24 @@ class Jira_Api
         return $this->api(self::REQUEST_POST, "/rest/api/2/version", $options);
     }
 
+
+    /**
+     * create JIRA Attachment
+     *
+     * @param $issue
+     * @param $filename
+     * @param array $options
+     * @return mixed
+     */
+    public function createAttachment($issue, $filename,$options = array())
+    {
+    	$options = array_merge(array(
+    			"file"            => '@' . $filename,
+    	), $options
+    	);
+    	return $this->api(self::REQUEST_POST, "/rest/api/2/issue/" . $issue . "/attachments", $options, false ,TRUE);
+    }
+    
     /**
      * send request to specified host
      *
@@ -249,15 +428,17 @@ class Jira_Api
      * @param bool $return_as_json
      * @return mixed
      */
-    public function api($method = self::REQUEST_GET, $url, $data = array(), $return_as_json = false)
+    public function api($method = self::REQUEST_GET, $url, $data = array(), $return_as_json = false, $isfile = false, $debug = FALSE)
     {
-        $result = $this->client->sendRequest(
-            $method,
-            $url,
-            $data,
-            $this->getEndpoint(),
-            $this->authentication
-        );
+        	$result = $this->client->sendRequest(
+        			$method,
+        			$url,
+        			$data,
+        			$this->getEndpoint(),
+        			$this->authentication,
+        			$isfile,
+        			$debug
+        	);
 
         if (strlen($result)) {
             $json = json_decode($result, true);
@@ -282,6 +463,22 @@ class Jira_Api
         } else {
             return false;
         }
+    }
+
+    public function downloadAttachment ($url)
+    {
+        $result = $this->client->sendRequest
+        (
+            self::REQUEST_GET,
+            $url,
+            array(),
+            null,
+            $this->authentication,
+            true,
+            false
+        );
+
+        return $result;
     }
 
     protected function automapFields($issue)

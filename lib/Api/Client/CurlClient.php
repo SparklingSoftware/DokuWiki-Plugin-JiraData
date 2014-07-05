@@ -44,10 +44,10 @@ class Jira_Api_Client_CurlClient implements Jira_Api_Client_ClientInterface
      * @return array|string
      * @throws Exception
      */
-    public function sendRequest($method, $url, $data = array(), $endpoint, Jira_Api_Authentication_AuthenticationInterface $credential)
+    public function sendRequest($method, $url, $data = array(), $endpoint, Jira_Api_Authentication_AuthenticationInterface $credential, $isFile = FALSE, $debug = FALSE)
     {
         if (!($credential instanceof Jira_Api_Authentication_Basic)) {
-            throw new Exception(sprintf("PHPClient does not support %s authentication.", get_class($credential)));
+            throw new Exception(sprintf("CurlClient does not support %s authentication.", get_class($credential)));
         }
 
         $curl = curl_init();
@@ -63,17 +63,40 @@ class Jira_Api_Client_CurlClient implements Jira_Api_Client_ClientInterface
         curl_setopt($curl, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_0);
         curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
         curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, 0);
-        curl_setopt($curl, CURLOPT_HTTPHEADER, array("Content-Type: application/json; charset=utf-8"));
-
+        curl_setopt($curl, CURLOPT_VERBOSE, $debug);
+        if ($isFile) {
+        	curl_setopt($curl, CURLOPT_HTTPHEADER, array ('X-Atlassian-Token: nocheck'));
+        } else {
+        	curl_setopt($curl, CURLOPT_HTTPHEADER, array("Content-Type: application/json;charset=UTF-8"));
+        }
         if ($method == "POST") {
             curl_setopt($curl, CURLOPT_POST, 1);
-            curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($data));
+            if ($isFile) {
+            	curl_setopt($curl, CURLOPT_POSTFIELDS, $data);
+            } else {
+            	curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($data));
+            }
         } else if ($method == "PUT") {
             curl_setopt($curl, CURLOPT_CUSTOMREQUEST, "PUT");
             curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($data));
         }
 
         $data = curl_exec($curl);
+
+        $errorNumber = curl_errno($curl);
+        if ($errorNumber > 0) {
+            throw new Jira_Api_Exception(
+                sprintf('Jira request failed: code = %s, "%s"', $errorNumber, curl_error($curl))
+            );
+        }
+
+        // if empty result and status != "204 No Content"
+        if (curl_getinfo($curl, CURLINFO_HTTP_CODE) == 401) {
+            throw new Jira_Api_UnauthorizedException("Unauthorized");
+        }
+        if ($data === '' && curl_getinfo($curl, CURLINFO_HTTP_CODE) != 204) {
+            throw new Exception("JIRA Rest server returns unexpected result.");
+        }
 
         if (is_null($data)) {
             throw new Exception("JIRA Rest server returns unexpected result.");
@@ -82,4 +105,5 @@ class Jira_Api_Client_CurlClient implements Jira_Api_Client_ClientInterface
         return $data;
     }
 
+    
 }

@@ -2,7 +2,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2012 Shuhei Tanuma
+ * Copyright (c) 2012 Tim Otten
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,30 +22,25 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  */
 
-class Jira_Api_Authentication_Basic implements Jira_Api_Authentication_AuthenticationInterface
+class Jira_Api_Authentication_Anonymous implements Jira_Api_Authentication_AuthenticationInterface
 {
-    private $user_id;
-    private $password;
-
-    public function __construct($user_id, $password)
+    public function __construct()
     {
-        $this->user_id  = $user_id;
-        $this->password = $password;
     }
 
     public function getCredential()
     {
-        return base64_encode($this->user_id . ':' . $this->password);
+        return NULL;
     }
 
     public function getId()
     {
-        return $this->user_id;
+        return NULL;
     }
 
     public function getPassword()
     {
-        return $this->password;
+        return NULL;
     }
 
 }

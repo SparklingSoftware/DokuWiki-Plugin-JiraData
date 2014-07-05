@@ -20,32 +20,10 @@
  * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
+//namespace Jira\Api;
 
-class Jira_Api_Authentication_Basic implements Jira_Api_Authentication_AuthenticationInterface
+class Jira_Api_Exception extends Exception
 {
-    private $user_id;
-    private $password;
-
-    public function __construct($user_id, $password)
-    {
-        $this->user_id  = $user_id;
-        $this->password = $password;
-    }
-
-    public function getCredential()
-    {
-        return base64_encode($this->user_id . ':' . $this->password);
-    }
-
-    public function getId()
-    {
-        return $this->user_id;
-    }
-
-    public function getPassword()
-    {
-        return $this->password;
-    }
-
 }
