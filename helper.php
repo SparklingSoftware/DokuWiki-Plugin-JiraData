@@ -177,7 +177,7 @@ class helper_plugin_jiradata extends DokuWiki_Plugin {
         }
 
         // Set the time to zero, so the first alert msg will set the correct status
-        $sql = "INSERT OR REPLACE INTO jiradata (id, summary, description, timestamp) VALUES ('".$key."', '".$summary."', '".$description."', ".time().");";
+        $sql = "INSERT OR REPLACE INTO jiradata (key, summary, description, timestamp) VALUES ('".$key."', '".$summary."', '".$description."', ".time().");";
         $this->sqlite->query($sql);
     }
         
