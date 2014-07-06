@@ -43,7 +43,7 @@ class helper_plugin_jiradata extends DokuWiki_Plugin {
         { 
              // Get fresh data from JIRA
              $issue = $this->getIssue($key);
-             $summary = $issue["title"]
+             $summary = $issue["title"];
         }
         else {
             // Read the info from the cache
