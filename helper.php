@@ -38,7 +38,7 @@ class helper_plugin_jiradata extends DokuWiki_Plugin {
         $res = $this->loadSqlite();
         if (!$res) return;
 
-        $cacheTimedOut = hasLocalCacheTimedOut($key);
+        $cacheTimedOut = $this->hasLocalCacheTimedOut($key);
         if ($cacheTimedOut)
         { 
              // Get fresh data from JIRA
@@ -47,8 +47,9 @@ class helper_plugin_jiradata extends DokuWiki_Plugin {
         }
         else {
             // Read the info from the cache
-            $res = $this->sqlite->query("SELECT summary FROM jiradata WHERE key = '".$key."'");
-            $summary = sqlite_fetch_single($res);
+            $res = $this->sqlite->query("SELECT summary FROM jiradata WHERE key = '".$key."';");
+            $row = $this->sqlite->res2row($res,$rownum=0);
+            $summary = $row['timestamp'];
         }
 
         if (!$summary) return $key;
@@ -156,9 +157,11 @@ class helper_plugin_jiradata extends DokuWiki_Plugin {
 
         $res = $this->loadSqlite();
         if (!$res) return;
-        
+
         $res = $this->sqlite->query("SELECT timestamp FROM jiradata WHERE key = '".$key."';");
-        $timestamp = (int) sqlite_fetch_single($res);
+        $row = $this->sqlite->res2row($res,$rownum=0);
+        $timestamp = $row['timestamp'];
+
         if ($timestamp < time() - (60 * 30))  // 60 seconds x 5 minutes
         { 
             $hasCacheTimedOut = true; 
